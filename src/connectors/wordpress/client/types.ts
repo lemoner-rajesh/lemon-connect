@@ -75,9 +75,11 @@ export interface WpPost {
   readonly status: string;
   readonly type: WpPostType;
   readonly link: string;
-  readonly title: WpRenderedField;
-  readonly content: WpRenderedField;
-  readonly excerpt: WpRenderedField;
+  // title/content/excerpt are omitted entirely by WordPress (not sent as empty
+  // objects) for post types that don't declare that feature in their `supports`.
+  readonly title?: WpRenderedField;
+  readonly content?: WpRenderedField;
+  readonly excerpt?: WpRenderedField;
   readonly author: number;
   readonly featured_media: number;
   readonly yoast_head_json?: WpYoastHeadJson;

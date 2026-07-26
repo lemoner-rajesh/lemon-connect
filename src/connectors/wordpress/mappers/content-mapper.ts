@@ -25,9 +25,14 @@ function mapTerms(post: WpPost, taxonomy: string): (Category | Tag)[] {
     .map((term) => ({ id: term.id, name: term.name, slug: term.slug }));
 }
 
-/** Falls back to a truncated excerpt generated from the article body when WordPress's own excerpt is empty. */
+/**
+ * Falls back to a truncated excerpt generated from the article body when
+ * WordPress's own excerpt is empty — or entirely absent, which happens for
+ * post types that don't declare `excerpt` support (WordPress omits the
+ * field from the REST response rather than sending an empty one).
+ */
 function resolveExcerpt(post: WpPost, plainContent: string): string {
-  const rendered = stripHtml(post.excerpt.rendered);
+  const rendered = post.excerpt ? stripHtml(post.excerpt.rendered) : '';
   return rendered.length > 0 ? rendered : truncate(plainContent, GENERATED_EXCERPT_MAX_LENGTH);
 }
 
@@ -47,11 +52,11 @@ function mapSeo(post: WpPost): SeoMetadata | undefined {
 
 function mapCommonFields(resolved: ResolvedWpPost, baseUrl: string) {
   const { post, featuredImage } = resolved;
-  const plainContent = stripHtml(post.content.rendered);
+  const plainContent = post.content ? stripHtml(post.content.rendered) : '';
 
   return {
     id: String(post.id),
-    title: stripHtml(post.title.rendered),
+    title: post.title ? stripHtml(post.title.rendered) : '',
     slug: post.slug,
     permalink: toAbsoluteUrl(post.link, baseUrl),
     featuredImage,
@@ -87,7 +92,7 @@ export function toSearchResult(resolved: ResolvedWpPost, baseUrl: string): Searc
 /** Maps a resolved WordPress post/page/custom-type item into the connector-agnostic content detail shape. */
 export function toContentDetails(resolved: ResolvedWpPost, baseUrl: string): ContentDetails {
   const common = mapCommonFields(resolved, baseUrl);
-  const contentHtml = absolutizeHtmlUrls(resolved.post.content.rendered, baseUrl);
+  const contentHtml = absolutizeHtmlUrls(resolved.post.content?.rendered ?? '', baseUrl);
   const seo = mapSeo(resolved.post);
 
   return {

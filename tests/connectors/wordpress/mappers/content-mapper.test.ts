@@ -80,6 +80,13 @@ describe('toSearchResult', () => {
     expect(result.tags).toEqual([]);
   });
 
+  it('does not throw when title/content/excerpt are entirely absent (a post type without that support)', () => {
+    const result = toSearchResult(buildResolved({ title: undefined, content: undefined, excerpt: undefined }), BASE_URL);
+
+    expect(result.title).toBe('');
+    expect(result.excerpt).toBe('');
+  });
+
   it('generates a truncated excerpt from the body when WordPress supplies an empty one', () => {
     const longSentence = Array.from({ length: 40 }, (_, i) => `word${String(i)}`).join(' ');
     const result = toSearchResult(
@@ -150,5 +157,17 @@ describe('toContentDetails', () => {
     expect(details.featuredImageAlt).toBeNull();
     expect(details.categories).toEqual([]);
     expect(details.tags).toEqual([]);
+  });
+
+  it('does not throw when title/content/excerpt are entirely absent (a post type without that support)', () => {
+    const details = toContentDetails(
+      buildResolved({ title: undefined, content: undefined, excerpt: undefined }),
+      BASE_URL,
+    );
+
+    expect(details.title).toBe('');
+    expect(details.contentHtml).toBe('');
+    expect(details.contentText).toBe('');
+    expect(details.excerpt).toBe('');
   });
 });
