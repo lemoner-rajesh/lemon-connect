@@ -9,7 +9,7 @@ export interface RegisterToolsOptions {
   readonly maxSearchLimit: number;
 }
 
-/** Registers all Lemon Connect MCP tools against `server`, backed by `connector`. */
+/** Registers all alj MCP tools against `server`, backed by `connector`. */
 export function registerTools(server: McpServer, connector: Connector, options: RegisterToolsOptions): void {
   registerSearchContentTool(server, connector, {
     defaultLimit: options.defaultSearchLimit,

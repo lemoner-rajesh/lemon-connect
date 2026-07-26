@@ -20,7 +20,7 @@ const JSON_RPC_INTERNAL_ERROR = {
 };
 
 /**
- * Runs Lemon Connect over the Streamable HTTP MCP transport, for remote
+ * Runs alj over the Streamable HTTP MCP transport, for remote
  * clients (e.g. deployed on Railway).
  *
  * The `/mcp` endpoint is stateless: every request gets a fresh `McpServer`
@@ -61,7 +61,7 @@ export function startHttpServer(connector: Connector, config: AppConfig): void {
   }
 
   app.listen(port, () => {
-    logger.info({ port, connector: connector.name }, 'Lemon Connect is running over Streamable HTTP');
+    logger.info({ port, connector: connector.name }, 'alj is running over Streamable HTTP');
   });
 }
 

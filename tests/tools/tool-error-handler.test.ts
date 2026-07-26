@@ -8,7 +8,7 @@ describe('runTool', () => {
     expect(result).toEqual({ content: [{ type: 'text', text: 'ok' }] });
   });
 
-  it('converts a LemonConnectError into an isError result with its message', async () => {
+  it('converts an AljError into an isError result with its message', async () => {
     const result = await runTool('test_tool', () => {
       throw new ValidationError('id must be a positive integer.');
     });

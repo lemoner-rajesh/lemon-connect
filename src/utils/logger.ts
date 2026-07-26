@@ -3,7 +3,7 @@ import pino from 'pino';
 /**
  * All logging goes to stderr, never stdout.
  *
- * This is not a style preference: when Lemon Connect runs over the stdio MCP
+ * This is not a style preference: when alj runs over the stdio MCP
  * transport, stdout *is* the JSON-RPC message stream. Anything else written
  * there corrupts the protocol. Keeping every logger on stderr means the same
  * logging code is safe under both stdio and HTTP transports.
@@ -17,7 +17,7 @@ function resolveLevel(): string {
   return configured && VALID_LEVELS.has(configured) ? configured : 'info';
 }
 
-const rootLogger = pino({ level: resolveLevel(), base: { service: 'lemon-connect' } }, destination);
+const rootLogger = pino({ level: resolveLevel(), base: { service: 'alj' } }, destination);
 
 /**
  * Creates a namespaced child logger, e.g. `createLogger('wordpress-client')`.

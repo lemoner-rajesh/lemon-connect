@@ -1,11 +1,11 @@
-import { LemonConnectError } from './base.error.js';
+import { AljError } from './base.error.js';
 
 /**
  * Base class for failures raised by a `Connector` implementation. Specific
  * connectors (e.g. WordPress) should extend this rather than throwing it
  * directly, so callers can distinguish connectors by error type when needed.
  */
-export class ConnectorError extends LemonConnectError {
+export class ConnectorError extends AljError {
   readonly code: string = 'CONNECTOR_ERROR';
 }
 

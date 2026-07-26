@@ -1,7 +1,7 @@
 import { WordPressClient } from './connectors/wordpress/client/wordpress-client.js';
 import { WordPressConnector } from './connectors/wordpress/wordpress-connector.js';
 import { loadConfig } from './config/env.js';
-import { LemonConnectError } from './errors/index.js';
+import { AljError } from './errors/index.js';
 import { startHttpServer } from './server/http-transport.js';
 import { startStdioServer } from './server/stdio-transport.js';
 import { createLogger } from './utils/logger.js';
@@ -28,10 +28,10 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  if (error instanceof LemonConnectError) {
-    logger.fatal({ code: error.code, err: error }, 'Lemon Connect failed to start');
+  if (error instanceof AljError) {
+    logger.fatal({ code: error.code, err: error }, 'alj failed to start');
   } else {
-    logger.fatal({ err: error }, 'Lemon Connect failed to start with an unexpected error');
+    logger.fatal({ err: error }, 'alj failed to start with an unexpected error');
   }
   process.exitCode = 1;
 });

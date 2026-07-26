@@ -1,6 +1,6 @@
-# Lemon Connect
+# alj
 
-**Lemon Connect** is an AI Connector Platform: a home for reusable [Model Context Protocol](https://modelcontextprotocol.io) (MCP) connectors that let AI assistants (Claude, ChatGPT, and others) read from real systems.
+**alj** is an AI Connector Platform: a home for reusable [Model Context Protocol](https://modelcontextprotocol.io) (MCP) connectors that let AI assistants (Claude, ChatGPT, and others) read from real systems.
 
 **Phase 1** ships exactly one connector: **WordPress Search** — a read-only MCP server that lets an assistant search and read the public content of a single WordPress site.
 
@@ -10,7 +10,7 @@ Search and listing cover every public content type the site registers automatica
 
 ## Why this exists
 
-Ask an assistant connected to Lemon Connect things like:
+Ask an assistant connected to alj things like:
 
 - "Find our latest health articles."
 - "Show me insurance news."
@@ -52,7 +52,7 @@ The client fetches up to `limit` candidates per content type from WordPress (so 
 
 ## Architecture
 
-Lemon Connect is built as a **connector platform**, not a WordPress-specific tool. The MCP tools layer only knows about the `Connector` interface — it has no idea WordPress exists.
+alj is built as a **connector platform**, not a WordPress-specific tool. The MCP tools layer only knows about the `Connector` interface — it has no idea WordPress exists.
 
 ```
 src/
@@ -141,10 +141,10 @@ Missing or invalid required configuration fails fast at startup with a clear `Co
 
 ## Transports
 
-Lemon Connect supports both MCP transports and picks automatically based on environment:
+alj supports both MCP transports and picks automatically based on environment:
 
 - **`process.env.PORT` is set → Streamable HTTP.** Exposes:
-  - `GET /` — `{ "name": "Lemon Connect", "connector": "WordPress Search", "status": "running", "version": "..." }`
+  - `GET /` — `{ "name": "alj", "connector": "WordPress Search", "status": "running", "version": "..." }`
   - `GET /health` — `{ "status": "ok" }`
   - `POST /mcp` — the MCP endpoint (stateless: a fresh server/session per request)
   - `GET /mcp`, `DELETE /mcp` — `405`, since this deployment doesn't use MCP sessions
@@ -160,9 +160,9 @@ Add to your Claude Desktop MCP config (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "lemon-connect": {
+    "alj": {
       "command": "node",
-      "args": ["/absolute/path/to/lemon-connect/dist/index.js"],
+      "args": ["/absolute/path/to/alj-connect/dist/index.js"],
       "env": {
         "WORDPRESS_URL": "https://example.com"
       }
@@ -187,7 +187,7 @@ curl http://localhost:3000/health
 3. In the Railway project's **Variables** tab, set:
    - `WORDPRESS_URL` — your WordPress site's base URL
    - optionally `WORDPRESS_TIMEOUT_MS`, `DEFAULT_SEARCH_LIMIT`, `MAX_SEARCH_LIMIT`, `LOG_LEVEL`
-   - **do not** set `PORT` yourself — Railway injects it, which is exactly the signal Lemon Connect uses to start the HTTP transport.
+   - **do not** set `PORT` yourself — Railway injects it, which is exactly the signal alj uses to start the HTTP transport.
 4. Deploy. Once live, verify with:
    ```bash
    curl https://<your-app>.up.railway.app/health

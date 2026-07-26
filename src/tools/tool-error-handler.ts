@@ -1,5 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { LemonConnectError } from '../errors/index.js';
+import { AljError } from '../errors/index.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('tools');
@@ -15,7 +15,7 @@ export async function runTool(toolName: string, handler: () => Promise<CallToolR
   try {
     return await handler();
   } catch (error) {
-    if (error instanceof LemonConnectError) {
+    if (error instanceof AljError) {
       logger.warn({ tool: toolName, code: error.code, err: error }, 'Tool call failed');
       return errorResult(error.message);
     }

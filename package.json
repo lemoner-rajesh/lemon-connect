@@ -1,7 +1,7 @@
 {
-  "name": "lemon-connect",
+  "name": "alj",
   "version": "0.1.0",
-  "description": "Lemon Connect — an AI Connector Platform. Phase 1: a read-only WordPress Search MCP connector.",
+  "description": "alj — an AI Connector Platform. Phase 1: a read-only WordPress Search MCP connector.",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -9,7 +9,7 @@
   },
   "main": "dist/index.js",
   "bin": {
-    "lemon-connect": "dist/index.js"
+    "alj": "dist/index.js"
   },
   "files": [
     "dist"

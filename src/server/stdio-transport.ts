@@ -7,7 +7,7 @@ import { createMcpServer } from './create-mcp-server.js';
 const logger = createLogger('stdio-transport');
 
 /**
- * Runs Lemon Connect over the stdio MCP transport, for local clients like
+ * Runs alj over the stdio MCP transport, for local clients like
  * Claude Desktop. There is exactly one server/session per process lifetime.
  */
 export async function startStdioServer(connector: Connector, config: AppConfig): Promise<void> {
@@ -15,5 +15,5 @@ export async function startStdioServer(connector: Connector, config: AppConfig):
   const transport = new StdioServerTransport();
 
   await server.connect(transport);
-  logger.info({ connector: connector.name }, 'Lemon Connect is running over stdio');
+  logger.info({ connector: connector.name }, 'alj is running over stdio');
 }

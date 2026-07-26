@@ -72,7 +72,7 @@ describe('MCP server (end-to-end over an in-memory transport)', () => {
     await client.close();
   });
 
-  it('lists exactly the three Lemon Connect tools', async () => {
+  it('lists exactly the three alj tools', async () => {
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name).sort()).toEqual(['get_content', 'list_recent_content', 'search_content']);
   });
