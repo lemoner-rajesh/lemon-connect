@@ -10,6 +10,7 @@ function buildPost(overrides: Partial<WpPost> = {}): WpPost {
   return {
     id: 1,
     date_gmt: '2024-01-01T00:00:00',
+    modified_gmt: '2024-01-02T00:00:00',
     slug: 'hello-world',
     status: 'publish',
     type: 'post',
@@ -65,6 +66,30 @@ describe('WordPressConnector.search', () => {
     await expect(connector.search('   ', 5)).rejects.toThrow(ValidationError);
     expect(client.search).not.toHaveBeenCalled();
   });
+
+  it('ranks the merged candidate pool by relevance and returns the top `limit`, discarding the rest', async () => {
+    // An exact title match buried behind two weaker ones, exercising both re-ranking and truncation.
+    const weakMatch1 = buildResolved({
+      id: 1,
+      title: { rendered: 'Unrelated Article' },
+      content: { rendered: '<p>mentions widgets once</p>' },
+    });
+    const exactMatch = buildResolved({ id: 2, title: { rendered: 'Widgets' } });
+    const weakMatch2 = buildResolved({
+      id: 3,
+      title: { rendered: 'Another Unrelated Post' },
+      content: { rendered: '<p>also about widgets</p>' },
+    });
+    const client = buildFakeClient({ search: vi.fn().mockResolvedValue([weakMatch1, exactMatch, weakMatch2]) });
+    const connector = new WordPressConnector(client);
+
+    const results = await connector.search('widgets', 2);
+
+    expect(results).toHaveLength(2);
+    expect(results[0]?.id).toBe('2');
+    expect(results[0]?.score).toBe(1);
+    expect(results.every((r) => (r.score ?? 0) >= (results[1]?.score ?? 0))).toBe(true);
+  });
 });
 
 describe('WordPressConnector.get', () => {
@@ -103,5 +128,15 @@ describe('WordPressConnector.recent', () => {
 
     expect(client.recent).toHaveBeenCalledWith(2);
     expect(results).toHaveLength(2);
+  });
+
+  it('omits score, since recent content has no query to rank against', async () => {
+    const client = buildFakeClient({ recent: vi.fn().mockResolvedValue([buildResolved()]) });
+    const connector = new WordPressConnector(client);
+
+    const [result] = await connector.recent(5);
+
+    expect(result?.score).toBeUndefined();
+    expect(result && 'score' in result).toBe(false);
   });
 });

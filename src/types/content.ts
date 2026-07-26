@@ -21,6 +21,7 @@ export interface FeaturedImage {
 export interface Author {
   readonly id: number;
   readonly name: string;
+  readonly slug: string;
 }
 
 /** A taxonomy term classifying content as a category. */
@@ -60,10 +61,17 @@ export interface SearchResult {
   readonly featuredImageAlt: string | null;
   readonly author: Author | null;
   readonly publishedDate: string;
+  readonly modifiedDate: string;
   /** The content's post type slug, e.g. "post", "page", or a custom type like "news". */
   readonly contentType: string;
   readonly categories: readonly Category[];
   readonly tags: readonly Tag[];
+  /**
+   * Relevance score in `[0, 1]`, highest first. Present only on results from
+   * `search_content` (ranked against the search query); absent from
+   * `list_recent_content` results, which have no query to score against.
+   */
+  readonly score?: number;
 }
 
 /**
@@ -81,11 +89,15 @@ export interface ContentDetails {
   readonly featuredImageAlt: string | null;
   readonly author: Author | null;
   readonly publishedDate: string;
+  readonly modifiedDate: string;
   readonly permalink: string;
   readonly slug: string;
   readonly contentType: string;
   readonly categories: readonly Category[];
   readonly tags: readonly Tag[];
+  readonly wordCount: number;
+  /** Estimated reading time in whole minutes (minimum 1 for any non-empty content), assuming ~200 words/minute. */
+  readonly estimatedReadingTime: number;
   /** Present only when an SEO plugin (e.g. Yoast SEO) exposes this data. */
   readonly seo?: SeoMetadata;
 }

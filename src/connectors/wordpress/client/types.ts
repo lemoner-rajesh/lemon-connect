@@ -18,6 +18,7 @@ export interface WpRenderedField {
 export interface WpEmbeddedAuthor {
   readonly id: number;
   readonly name: string;
+  readonly slug: string;
 }
 
 /** A WordPress media (attachment) object, whether embedded or fetched directly from `/media/{id}`. */
@@ -71,6 +72,7 @@ export interface WpYoastHeadJson {
 export interface WpPost {
   readonly id: number;
   readonly date_gmt: string;
+  readonly modified_gmt: string;
   readonly slug: string;
   readonly status: string;
   readonly type: WpPostType;

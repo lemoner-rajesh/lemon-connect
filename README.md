@@ -29,11 +29,26 @@ The assistant calls the tools below, gets back structured JSON, and answers in n
 
 All three are read-only (`readOnlyHint: true`) and return both a JSON text block and MCP `structuredContent` validated against a schema, so the calling assistant can rely on the shape.
 
-**`SearchResult`**: `id`, `title`, `excerpt`, `slug`, `permalink`, `featuredImage` (`{ url, alt, width, height } | null`), `featuredImageAlt`, `author` (`{ id, name } | null`), `publishedDate`, `contentType`, `categories` (`{ id, name, slug }[]`), `tags` (same shape).
+**`SearchResult`**: `id`, `title`, `excerpt`, `slug`, `permalink`, `featuredImage` (`{ url, alt, width, height } | null`), `featuredImageAlt`, `author` (`{ id, name, slug } | null`), `publishedDate`, `modifiedDate`, `contentType`, `categories` (`{ id, name, slug }[]`), `tags` (same shape), `score`.
 
-**`ContentDetails`**: everything in `SearchResult`, plus `contentHtml` and `contentText` (paragraph-preserving plain text — prefer this one), and `seo` (`{ seoTitle, metaDescription, canonicalUrl, openGraphImage }`, present only when the site has an SEO plugin like Yoast SEO installed).
+**`ContentDetails`**: everything in `SearchResult` except `score`, plus `contentHtml` and `contentText` (paragraph-preserving plain text — prefer this one), `wordCount`, `estimatedReadingTime` (whole minutes, ~200 words/minute), and `seo` (`{ seoTitle, metaDescription, canonicalUrl, openGraphImage }`, present only when the site has an SEO plugin like Yoast SEO installed).
 
 Every field WordPress can't supply is `null` rather than omitted, so the shape is always predictable. All URLs — including ones found inside the HTML body — are resolved to absolute URLs. When WordPress's own excerpt is empty, one is generated from the body and capped at 200 characters.
+
+### Search ranking
+
+`search_content` results are ranked by relevance, highest first, via each result's `score` (`0`–`1`):
+
+1. Exact title match (`1.0`)
+2. Title starts with the query (`0.85`)
+3. Title contains the query (`0.7`)
+4. Slug match (`0.55`)
+5. Excerpt match (`0.4`)
+6. Content match (`0.25`), or a small baseline (`0.1`) if WordPress's own search returned it without a direct match on any of these fields
+
+The client fetches up to `limit` candidates per content type from WordPress (so up to `types × limit` total), and `WordPressConnector` re-ranks that whole pool by `score` before returning the true top `limit` — so a strong match in a less-common content type isn't crowded out by weaker matches in a more common one.
+
+`score` is **only** present on `search_content` results — `list_recent_content` has no query to rank against, so the field is omitted there rather than filled with a placeholder.
 
 ## Architecture
 
@@ -77,6 +92,7 @@ The `tools/` layer, the MCP server, and both transports never change.
 - **`WordPressClient`** (`src/connectors/wordpress/client/`) — a thin REST wrapper. It is the _only_ file that builds a `/wp-json/wp/v2/...` URL or knows what a WordPress REST response looks like. It depends on `WordPressClientPort`-shaped structural typing so tests can inject a fake client.
 - **Dynamic post-type discovery** — the client queries `/wp/v2/types` once (cached for its lifetime) to find every registered content type, instead of hardcoding `post`/`page`. WordPress core/system types (media, nav menu items, site-editor blocks, font assets) are excluded by a curated list; any other type — built-in or a site's custom post type — is searched automatically.
 - **Featured media resolution** — the client uses the `_embed`-provided media object when present (no extra request); it only falls back to a direct `/media/{id}` fetch when a post's `featured_media` wasn't embedded, deduping repeated media ids within a batch.
+- **Search ranking split** — `WordPressClient.search()` returns an unranked candidate pool (WordPress's per-type ordering isn't comparable across types); `WordPressConnector.search()` maps it to `SearchResult[]`, scores each against the query (`src/utils/relevance.ts`), and returns the top `limit` by score. Ranking lives in the connector because it's a property of the mapped domain fields (title/slug/excerpt/content), not the raw WordPress response — keeping `WordPressClient` a dumb REST client and `computeRelevanceScore` independently unit-testable.
 - **Dependency injection throughout** — `WordPressClient` takes an injectable `fetch`; `WordPressConnector` takes a `WordPressClientPort`; tool registration takes a `Connector`. Nothing reaches for a global. See `tests/` for unit tests built on exactly these seams, including an end-to-end test that drives the real `McpServer` over an in-memory MCP transport.
 - **Errors** — `ValidationError` (bad tool input), `ConfigError` (bad/missing env config, fatal at startup), `ConnectorError`/`ContentNotFoundError` (connector-level failures), `WordPressError` (WordPress REST API failures, carrying `statusCode`/`endpoint`/`cause` for logging). Tool handlers catch these and return an MCP `isError` result with a clean message — internal details and stack traces are logged server-side only, never returned to the client.
 - **Logging** — structured JSON via [pino](https://getpino.io), always written to **stderr**. This matters: under the stdio transport, stdout _is_ the JSON-RPC message stream, so nothing may ever be written there. `console.log` is banned by lint rule for the same reason.

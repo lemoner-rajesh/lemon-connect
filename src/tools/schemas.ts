@@ -17,6 +17,7 @@ export const featuredImageSchema = z.object({
 export const authorSchema = z.object({
   id: z.number(),
   name: z.string(),
+  slug: z.string(),
 });
 
 export const categorySchema = z.object({
@@ -48,9 +49,18 @@ export const searchResultSchema = z.object({
   featuredImageAlt: z.string().nullable(),
   author: authorSchema.nullable(),
   publishedDate: z.string().describe('ISO 8601 publish date/time.'),
+  modifiedDate: z.string().describe('ISO 8601 last-modified date/time.'),
   contentType: z.string().describe('The content\'s post type, e.g. "post", "page", or a custom type like "news".'),
   categories: z.array(categorySchema),
   tags: z.array(tagSchema),
+  score: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe(
+      'Relevance score in [0, 1], highest first (exact title match ranks highest, down through title/slug/excerpt/content matches). Only present on search_content results.',
+    ),
 });
 
 export const contentDetailsSchema = z.object({
@@ -65,10 +75,13 @@ export const contentDetailsSchema = z.object({
   featuredImageAlt: z.string().nullable(),
   author: authorSchema.nullable(),
   publishedDate: z.string().describe('ISO 8601 publish date/time.'),
+  modifiedDate: z.string().describe('ISO 8601 last-modified date/time.'),
   permalink: z.string().describe('Absolute public URL of the content.'),
   slug: z.string(),
   contentType: z.string().describe('The content\'s post type, e.g. "post", "page", or a custom type like "news".'),
   categories: z.array(categorySchema),
   tags: z.array(tagSchema),
+  wordCount: z.number().describe('Word count of contentText.'),
+  estimatedReadingTime: z.number().describe('Estimated reading time in whole minutes, assuming ~200 words/minute.'),
   seo: seoMetadataSchema.optional().describe('Present only when an SEO plugin (e.g. Yoast SEO) is installed.'),
 });

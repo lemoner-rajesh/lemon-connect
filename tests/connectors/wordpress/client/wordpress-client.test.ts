@@ -34,6 +34,7 @@ function post(id: number, date_gmt: string, type: 'post' | 'page' = 'post', over
   return {
     id,
     date_gmt,
+    modified_gmt: date_gmt,
     slug: `post-${String(id)}`,
     status: 'publish',
     type,
@@ -76,27 +77,10 @@ describe('WordPressClient.search', () => {
     expect(urls.some((u) => u.endsWith('/menu-items'))).toBe(false);
   });
 
-  it('interleaves per-type results by relevance instead of re-sorting by date', async () => {
-    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
-      const parsed = toUrl(url);
-      const typesResponse = typesRoute(parsed);
-      if (typesResponse) return typesResponse;
-      if (parsed.pathname.endsWith('/posts')) {
-        // Relevance order from WordPress: 10 first, then 20 — note this is NOT date order.
-        return jsonResponse([post(10, '2024-01-01T00:00:00'), post(20, '2024-06-01T00:00:00')]);
-      }
-      return jsonResponse([post(30, '2024-12-01T00:00:00', 'page')]);
-    });
-
-    const client = new WordPressClient({ baseUrl: 'https://example.com', timeoutMs: 5000, fetchImpl });
-
-    const results = await client.search('health', 10);
-
-    // Round-robin: posts[0], pages[0], posts[1] — relevance order preserved within each type.
-    expect(results.map((r) => r.post.id)).toEqual([10, 30, 20]);
-  });
-
-  it('caps merged results at the requested limit', async () => {
+  it('returns the merged, unranked candidate pool across types without truncating to `limit`', async () => {
+    // Relevance ranking against the query happens in WordPressConnector, over this full pool — the
+    // client itself doesn't rank or truncate, since it has no notion of the domain-level SearchResult
+    // fields (title/slug/excerpt/content) ranking is computed from.
     const fetchImpl = vi.fn(async (url: string | URL | Request) => {
       const parsed = toUrl(url);
       const typesResponse = typesRoute(parsed);
@@ -111,7 +95,9 @@ describe('WordPressClient.search', () => {
 
     const results = await client.search('health', 2);
 
-    expect(results).toHaveLength(2);
+    // 2 posts + 1 page = 3 candidates, even though limit is 2 — the client fetches per_page=limit
+    // per type, but doesn't truncate the merged pool itself.
+    expect(results.map((r) => r.post.id).sort()).toEqual([1, 2, 3]);
   });
 
   it('caches post-type discovery across multiple calls', async () => {

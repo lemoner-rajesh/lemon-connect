@@ -86,11 +86,13 @@ export class WordPressClient implements WordPressClientPort {
   }
 
   /**
-   * Searches every public post type for `query` (matching title, excerpt, or
-   * content — WordPress's own search behavior), merges the per-type results
-   * by interleaving them (each type's list is already relevance-ordered by
-   * WordPress; there's no cross-type relevance score to sort by directly),
-   * and returns up to `limit` matches.
+   * Searches every public post type for `query` (WordPress's own `search`
+   * parameter matches title, excerpt, and content) and returns the merged
+   * candidate pool — up to `limit` items per type, so up to
+   * `types.length * limit` total. Deliberately unranked and untruncated:
+   * WordPress's per-type ordering isn't comparable across types, so
+   * `WordPressConnector` re-ranks the full pool by relevance against `query`
+   * and picks the true top `limit` from it (see `computeRelevanceScore`).
    */
   async search(query: string, limit: number): Promise<ResolvedWpPost[]> {
     const types = await this.getSearchablePostTypes();
@@ -99,7 +101,7 @@ export class WordPressClient implements WordPressClientPort {
         this.fetchCollection(type.restBase, { search: query, status: 'publish', per_page: String(limit) }),
       ),
     );
-    return interleaveByRelevance(resultsByType).slice(0, limit);
+    return resultsByType.flat();
   }
 
   /**
@@ -269,30 +271,6 @@ export class WordPressClient implements WordPressClientPort {
 
     return (await response.json()) as T;
   }
-}
-
-/**
- * Merges per-type result lists into a single relevance-ordered list by
- * interleaving them round-robin. Each individual list is already ordered by
- * WordPress's own relevance ranking for its type; WordPress doesn't expose a
- * numeric score that would let us produce a single cross-type ranking, so
- * interleaving is the closest honest approximation without re-sorting by an
- * unrelated field (e.g. date) and losing relevance order entirely.
- */
-function interleaveByRelevance(resultsByType: readonly ResolvedWpPost[][]): ResolvedWpPost[] {
-  const merged: ResolvedWpPost[] = [];
-  const maxLength = Math.max(0, ...resultsByType.map((list) => list.length));
-
-  for (let index = 0; index < maxLength; index += 1) {
-    for (const list of resultsByType) {
-      const item = list[index];
-      if (item) {
-        merged.push(item);
-      }
-    }
-  }
-
-  return merged;
 }
 
 function mergeSortedByDateDesc(resultsByType: readonly ResolvedWpPost[][]): ResolvedWpPost[] {

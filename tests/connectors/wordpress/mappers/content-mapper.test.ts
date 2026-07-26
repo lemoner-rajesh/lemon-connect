@@ -17,6 +17,7 @@ function buildPost(overrides: Partial<WpPost> = {}): WpPost {
   return {
     id: 42,
     date_gmt: '2024-03-15T09:30:00',
+    modified_gmt: '2024-04-01T10:00:00',
     slug: 'about-us',
     status: 'publish',
     type: 'page',
@@ -27,7 +28,7 @@ function buildPost(overrides: Partial<WpPost> = {}): WpPost {
     author: 7,
     featured_media: 3,
     _embedded: {
-      author: [{ id: 7, name: 'Jane Doe' }],
+      author: [{ id: 7, name: 'Jane Doe', slug: 'jane-doe' }],
       'wp:term': [
         [
           { id: 1, name: 'Health', slug: 'health', taxonomy: 'category' },
@@ -48,8 +49,8 @@ function buildResolved(
 }
 
 describe('toSearchResult', () => {
-  it('maps a resolved post into a SearchResult with rich, flat metadata', () => {
-    const result = toSearchResult(buildResolved(), BASE_URL);
+  it('maps a resolved post into a SearchResult with rich, flat metadata and a relevance score', () => {
+    const result = toSearchResult(buildResolved(), BASE_URL, 'About Us');
 
     expect(result).toEqual({
       id: '42',
@@ -59,19 +60,28 @@ describe('toSearchResult', () => {
       permalink: 'https://example.com/about-us/',
       featuredImage: DEFAULT_FEATURED_IMAGE,
       featuredImageAlt: 'A picture',
-      author: { id: 7, name: 'Jane Doe' },
+      author: { id: 7, name: 'Jane Doe', slug: 'jane-doe' },
       publishedDate: '2024-03-15T09:30:00.000Z',
+      modifiedDate: '2024-04-01T10:00:00.000Z',
       contentType: 'page',
       categories: [
         { id: 1, name: 'Health', slug: 'health' },
         { id: 2, name: 'Insurance', slug: 'insurance' },
       ],
       tags: [{ id: 5, name: 'leadership', slug: 'leadership' }],
+      score: 1,
     });
   });
 
+  it('omits score entirely when there is no query to rank against (e.g. recent content)', () => {
+    const result = toSearchResult(buildResolved(), BASE_URL, null);
+
+    expect(result.score).toBeUndefined();
+    expect('score' in result).toBe(false);
+  });
+
   it('returns null (not a placeholder) for missing author and featured image', () => {
-    const result = toSearchResult(buildResolved({ _embedded: undefined }, null), BASE_URL);
+    const result = toSearchResult(buildResolved({ _embedded: undefined }, null), BASE_URL, null);
 
     expect(result.author).toBeNull();
     expect(result.featuredImage).toBeNull();
@@ -81,7 +91,11 @@ describe('toSearchResult', () => {
   });
 
   it('does not throw when title/content/excerpt are entirely absent (a post type without that support)', () => {
-    const result = toSearchResult(buildResolved({ title: undefined, content: undefined, excerpt: undefined }), BASE_URL);
+    const result = toSearchResult(
+      buildResolved({ title: undefined, content: undefined, excerpt: undefined }),
+      BASE_URL,
+      null,
+    );
 
     expect(result.title).toBe('');
     expect(result.excerpt).toBe('');
@@ -92,6 +106,7 @@ describe('toSearchResult', () => {
     const result = toSearchResult(
       buildResolved({ excerpt: { rendered: '' }, content: { rendered: `<p>${longSentence}</p>` } }),
       BASE_URL,
+      null,
     );
 
     expect(result.excerpt.length).toBeLessThanOrEqual(201);
@@ -101,7 +116,7 @@ describe('toSearchResult', () => {
 });
 
 describe('toContentDetails', () => {
-  it('maps a resolved post into a ContentDetails with HTML and paragraph-preserving text', () => {
+  it('maps a resolved post into a ContentDetails with HTML, paragraph-preserving text, and reading stats', () => {
     const details = toContentDetails(
       buildResolved({ content: { rendered: '<p>First paragraph.</p><p>Second paragraph.</p>' } }),
       BASE_URL,
@@ -113,9 +128,23 @@ describe('toContentDetails', () => {
     expect(details.slug).toBe('about-us');
     expect(details.permalink).toBe('https://example.com/about-us/');
     expect(details.featuredImage).toEqual(DEFAULT_FEATURED_IMAGE);
+    expect(details.author).toEqual({ id: 7, name: 'Jane Doe', slug: 'jane-doe' });
+    expect(details.publishedDate).toBe('2024-03-15T09:30:00.000Z');
+    expect(details.modifiedDate).toBe('2024-04-01T10:00:00.000Z');
     expect(details.categories).toHaveLength(2);
     expect(details.tags).toHaveLength(1);
+    expect(details.wordCount).toBe(4);
+    expect(details.estimatedReadingTime).toBe(1);
     expect(details.seo).toBeUndefined();
+    expect('score' in details).toBe(false);
+  });
+
+  it('estimates reading time from a longer body at ~200 words/minute', () => {
+    const words = Array.from({ length: 450 }, (_, i) => `word${String(i)}`).join(' ');
+    const details = toContentDetails(buildResolved({ content: { rendered: `<p>${words}</p>` } }), BASE_URL);
+
+    expect(details.wordCount).toBe(450);
+    expect(details.estimatedReadingTime).toBe(3); // ceil(450 / 200)
   });
 
   it('absolutizes site-relative URLs found inside the content body', () => {
@@ -169,5 +198,7 @@ describe('toContentDetails', () => {
     expect(details.contentHtml).toBe('');
     expect(details.contentText).toBe('');
     expect(details.excerpt).toBe('');
+    expect(details.wordCount).toBe(0);
+    expect(details.estimatedReadingTime).toBe(0);
   });
 });

@@ -11,9 +11,10 @@ export function registerGetContentTool(server: McpServer, connector: Connector):
     {
       title: 'Get Content',
       description:
-        'Retrieve a complete content item including rich metadata and cleaned text: full body (as both HTML and ' +
-        'plain text), excerpt, author, featured image, published date, categories, tags, and — when the site has ' +
-        'an SEO plugin like Yoast SEO installed — SEO title, meta description, canonical URL, and Open Graph image.',
+        'Retrieve a complete content item including clean text, metadata and media: full body (as both HTML and ' +
+        'plain text), excerpt, author, featured image, published/modified dates, categories, tags, word count and ' +
+        'estimated reading time, and — when the site has an SEO plugin like Yoast SEO installed — SEO title, meta ' +
+        'description, canonical URL, and Open Graph image.',
       inputSchema: {
         id: z.string().min(1).describe('The content id, as returned by search_content or list_recent_content.'),
       },

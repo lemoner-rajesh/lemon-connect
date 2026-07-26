@@ -20,9 +20,10 @@ export function registerSearchContentTool(
     {
       title: 'Search Content',
       description:
-        'Search all published website content using natural language. Matches against title, excerpt, and body ' +
-        'text across every public content type (posts, pages, and any custom types the site registers), sorted by ' +
-        `relevance. Returns rich metadata suitable for AI assistants — up to ${String(maxLimit)} results.`,
+        'Search all published website content using natural language and return rich metadata optimized for AI ' +
+        'assistants. Matches against title, excerpt, and body text across every public content type (posts, pages, ' +
+        'and any custom types the site registers), ranked by relevance — exact title matches first, then title ' +
+        `starts-with, slug, excerpt, and content matches (each result's \`score\` reflects this) — up to ${String(maxLimit)} results.`,
       inputSchema: {
         query: z.string().min(1).describe('Search terms, e.g. "insurance news" or "leadership team".'),
         limit: z

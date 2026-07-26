@@ -13,17 +13,23 @@ const RESULT: SearchResult = {
   permalink: 'https://example.com/health-article/',
   featuredImage: { url: 'https://example.com/image.jpg', alt: 'A picture', width: 800, height: 600 },
   featuredImageAlt: 'A picture',
-  author: { id: 1, name: 'Jane Doe' },
+  author: { id: 1, name: 'Jane Doe', slug: 'jane-doe' },
   publishedDate: '2024-01-01T00:00:00.000Z',
+  modifiedDate: '2024-01-02T00:00:00.000Z',
   contentType: 'post',
   categories: [{ id: 1, name: 'Health', slug: 'health' }],
   tags: [],
+  score: 0.85,
 };
 
+const { score: _searchOnlyScore, ...RESULT_FIELDS } = RESULT;
+
 const DETAILS: ContentDetails = {
-  ...RESULT,
+  ...RESULT_FIELDS,
   contentHtml: '<p>The full article body.</p>',
   contentText: 'The full article body.',
+  wordCount: 4,
+  estimatedReadingTime: 1,
   seo: {
     seoTitle: 'SEO Title',
     metaDescription: 'Meta description.',
